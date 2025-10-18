@@ -1,0 +1,8 @@
+{
+    "name": "SaltLick",
+    "version": "0.1.0",
+    "author": "Dawson Goodell",
+    "description": "A very interactive, very game-y format for playing interactive Twine experiences",
+    "proofing": false,
+    "license": "MIT"
+}
