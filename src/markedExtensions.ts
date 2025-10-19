@@ -55,22 +55,23 @@ export const twineLink: TokenizerAndRendererExtension  = {
 export const optionList: TokenizerAndRendererExtension = {
     name: 'option-list',
     level: 'inline',
-    start(src: string) { src.match(/\[option\-list\:/)?.index },
+    start(src: string) { src.match(/\[option\-list\:?/)?.index },
     tokenizer(src: string, _tokens: any): OptionListToken | undefined {
-        const rule = /^\[option\-list\: (.*?)\]/;
+        const rule = /^\[option-list(?: for (\w+))?: ([\w, ]+)\]/;
         const match = rule.exec(src);
         if (match) {
-            const options = match[1].trim().split(',').map(o => o.trim());
+            const options = match[2].trim().split(',').map(o => o.trim());
 
             return {
                 type: 'option-list',
                 raw: match[0],
+                variable: match[1] || null,
                 options,
             }
         }
     },
     renderer(token: any) {
-        return `<option-list options='${JSON.stringify(token.options)}' />`;
+        return `<option-list variable='${token.variable}' options='${JSON.stringify(token.options)}' />`;
     },
 };
 

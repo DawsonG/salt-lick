@@ -1,4 +1,5 @@
 export default class OptionList extends HTMLElement {
+    private variable?: string;
     private selectedOption?: string;
     private options: string[] = [];
 
@@ -8,11 +9,13 @@ export default class OptionList extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['selected-option', 'options'];
+        return ['variable', 'selected-option', 'options'];
     }
 
     connectedCallback() {
         this.render();
+
+        console.log('connectedCallback', this.getAttribute('variable'));
         this.addEventListeners();
     }
 
@@ -20,6 +23,21 @@ export default class OptionList extends HTMLElement {
         if (name === 'options') {
             this.options = JSON.parse(newValue);
             this.render();
+
+            console.log(this.dataset.variable);
+            if (this.variable) {
+                console.log('emit', this.variable);
+                document.dispatchEvent(new CustomEvent('variable-change-event', {
+                    bubbles: false,
+                    cancelable: false,
+                    detail: {
+                        variableName: this.variable,
+                        variableValue: newValue
+                    }
+                }));
+            }
+        } else if (['variable'].includes(name)) {
+            (this as any)[name] = newValue;
         }
     }
 

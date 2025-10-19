@@ -1,4 +1,5 @@
 import markedParse from "./marked";
+import DscriptParser, { type Token } from "./parser/DscriptParser";
 import { loadPassage } from "./utils/passages";
 import { isWrappedInQuotes, parseOutQuotes } from "./utils/stringManipulation";
 import { type IPassage } from "./utils/tagHandlers";
@@ -10,6 +11,7 @@ export default class Game {
     private _state: Record<string, any>;
     private _history: IPassage[];
     private _historyIndex: number;
+    private readonly _parser: DscriptParser;
     private readonly _startingPoint: number;
     private readonly _container: HTMLDivElement;
     
@@ -19,11 +21,14 @@ export default class Game {
         this._historyIndex = -1;
         this._startingPoint = startingPoint || 0;
         this._container = document.getElementById('container')! as HTMLDivElement;
+        this._parser = new DscriptParser();
 
         if (startingPoint) {
             const passage = loadPassage(this._startingPoint);
             this.render(passage);
         }
+
+        this.attachGlobalEventListeners();
     }
 
     public goBack() {
@@ -75,56 +80,20 @@ export default class Game {
 
     private parseState(src: string): ParsingPath {
         let rtn: ParsingPath = 'Normal'; // How to parse the rest of the passage
-        let readIndex = 0; // Stores the 
-
-        for (const line of src.split(/\r?\n|\r/)) {
-            if (line.trim() === '') continue;
-            if (line.startsWith('VisualNovel')) {
-                rtn = 'VisualNovel';
-                // grab from { to }
-                const startIndex = src.indexOf('{');
-                const endIndex = src.indexOf('}');
+        
+        const tokens = [...this._parser.parse(src)];
+        for (const t of tokens) {
+            if (['whitespace', 'line-break'].includes(t.type)) {
+                continue;
             }
 
-            
-            const parts = line.split(/([+\-*=/]{1,2})/);
-            const name = parts[0].trim();
-            const op = parts[1].trim();
-            const value = parts[2].trim();
-
-            switch(op) {
-                case "=":
-                    if (isWrappedInQuotes(value)) {
-                        // Treat as string
-                        this._state[name] = parseOutQuotes(value);
-                    } else {
-                        // Treat as number
-                        this._state[name] = parseFloat(value);
-                    }
+            switch(t.type) {
+                case 'assignment':
+                    this.processAssignment(t);
                     break;
-                case "+=":
-                    if (isNumber(value)) {
-                        this._state[name] = (this._state[name] || 0) + parseFloat(value);
-                    } else {
-                        throw new Error(`${name} is not a number. Cannot add ${value}`);
-                    }
+                case 'reading-configuration':
+                    rtn = t.value!.keyword;
                     break;
-                case "-=":
-                    if (isNumber(value)) {
-                        this._state[name] = (this._state[name] || 0) - parseFloat(value);
-                    } else {
-                        throw new Error(`${name} is not a number. Cannot subtract ${value}`);
-                    }
-                    break;
-                case "*=":
-                    if (isNumber(value)) {
-                        this._state[name] = this._state[name] * parseFloat(value);
-                    } else {
-                        throw new Error(`${name} is not a number. Cannot multiply ${value}`);
-                    }
-                    break;
-                default:
-                    throw new Error(`${op} not recognized`);
             }
         }
 
@@ -133,6 +102,34 @@ export default class Game {
 
     private parseText(src: string): string {
         return src.replace(/{{(\w+)}}/g, (_, match) => `${this._state[match]}`);
+    }
+
+    private processAssignment(token: Token) {
+        const { variableName, variableOperator, variableValue } = token.value!;
+        switch (variableOperator) {
+            case '=':
+                this._state[variableName] = variableValue;
+                break;
+            case '+=':
+                this._state[variableName] = (this._state[variableName] || 0) + variableValue;
+                break;
+            case '-=':
+                this._state[variableName] = (this._state[variableName] || 0) - variableValue;
+                break;
+            case '*=':
+                this._state[variableName] = (this._state[variableName] || 0) * variableValue;
+                break;
+            default:
+                throw new Error(`Operator ${variableOperator} is not recognized.`);
+        }
+    }
+
+    private attachGlobalEventListeners() {
+        const self = this;
+        document.addEventListener('variable-change-event', function(event) {
+            self._state[(event as any).detail!.variableName] = 
+                (event as any).detail!.variableValue;
+        });
     }
 
     private attachEventListeners() {
