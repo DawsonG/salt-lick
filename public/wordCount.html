@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Twine Word Count</title>
+    </head>
+
+    <body>
+        <textarea id="textarea" rows="8" style="display: block; width: 100%;"></textarea>
+        <button type="button" id="btnCount">Count Words</button>
+
+        <script defer>
+            const textarea = document.getElementById('textarea');
+            const button = document.getElementById('btnCount');
+
+            button.addEventListener('click', () => {
+                let words = 0;
+                const originalString = textarea.value;
+                console.log('original string', originalString);
+                const cleanedString = originalString
+                    .replace(/<<script>>[\s\S]*?<<\/script>>/g, '') // replaces things between script tags
+                    .replace(/<<[\s\S]*?>>/g, '') // replaces single and multi-line <<>> cmds
+                    .replace(/\[\[.*?\]\]/g, ''); // replaces single line [[]] links
+                    
+                console.log('cleaned string', cleanedString);
+
+                const matches = cleanedString.trim().match(/[\w'-]+/g);
+                words = matches ? matches.length : 0;
+                console.log('word count', words);
+            });
+        </script>
+    </body>
+</html>
