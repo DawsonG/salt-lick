@@ -25,10 +25,22 @@ function load() {
 customElements.define('option-list', OptionList);
 customElements.define('transclude-passage', Passage);
 
+let game: Game | null = null;
 document.addEventListener('DOMContentLoaded', () => {
     // Load storydata
     const storydata = load();
 
     // Start the game
-    new Game(storydata.startnode);
+    game = new Game(storydata.startnode);
 });
+
+// Functions for end-users to use.
+function getState(name: string) {
+    if (!game) throw new Error('game not initialized correctly');
+    return game.state[name];
+}
+
+function setState(name: string, value: any) {
+    if (!game) throw new Error('game not initialized correctly');
+    game.setState(name, value);
+}

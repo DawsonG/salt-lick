@@ -5,6 +5,10 @@ type OptionListToken = Token & {
     options: string[];
 }
 
+type InputToken = Token & {
+    type: 'input';
+}
+
 type TwineLinkToken = Token & {
 	type: `twine-link`;
 	innerText: Token[];
@@ -74,6 +78,26 @@ export const optionList: TokenizerAndRendererExtension = {
         return `<option-list variable='${token.variable}' options='${JSON.stringify(token.options)}' />`;
     },
 };
+
+export const input: TokenizerAndRendererExtension = {
+    name: 'input',
+    level: 'block',
+    start(src: string) { src.match(/\[input\:?/)?.index },
+    tokenizer(src: string, _tokens: any): InputToken | undefined {
+        const rule = /^\[input(?: for (\w+))?\]/;
+        const match = rule.exec(src);
+        if (match) {
+            return {
+                type: 'input',
+                raw: match[0],
+                variable: match[1] || null,
+            }
+        }
+    },
+    renderer(token: any) {
+        return `<input type="text" data-variable="${token.variable}" />`;
+    }
+}
 
 export const transclude: TokenizerAndRendererExtension = {
     name: 'transclude',

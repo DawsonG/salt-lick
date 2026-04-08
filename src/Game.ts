@@ -53,6 +53,10 @@ export default class Game {
         return this._state;
     }
 
+    public setState(name: string, value: any) {
+        this._state[name] = value;
+    }
+
     public async render(passage: IPassage) {
         this._history.push(passage); // store the latest passage
     
